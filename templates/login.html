@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Biblioteca Virtual TES</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/estilos_login.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-end align-items-center vh-100">
+        <div class="col-md-5 col-lg-4">
+            <div class="card login-card shadow-lg mb-4 border-0" style="border-radius: 15px;">
+                <div class="card-body p-5">
+                    <h3 class="text-center mb-4 fw-bold">Ingrese sus Credenciales</h3>
+                    <form action="/" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">USUARIO</label>
+                            <input type="text" name="usuario" class="form-control bg-light" placeholder="ID Usuario" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-bold">CONTRASEÑA</label>
+                            <input type="password" name="clave" class="form-control bg-light" placeholder="••••••••" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mb-3 shadow-sm py-2 fw-bold">INGRESAR</button>
+                    </form>
+                    <div class="text-center">
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#modalOlvido" class="text-decoration-none small text-muted">
+                            ¿Olvidaste tus credenciales?
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0" style="border-radius: 15px;">
+                <div class="card-body p-3 text-center">
+                    <p class="mb-2 text-muted small">¿No tienes una cuenta?</p>
+                    <button class="btn btn-outline-dark btn-sm w-100 fw-bold" data-bs-toggle="modal" data-bs-target="#modalRegistro">
+                        CREAR NUEVO USUARIO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRegistro" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Registro de Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="formRegistro">
+                    <div class="row g-2">
+                        <div class="col-6"><input type="text" id="reg_nombres" class="form-control" placeholder="Nombres" required></div>
+                        <div class="col-6"><input type="text" id="reg_apellidos" class="form-control" placeholder="Apellidos" required></div>
+                        <div class="col-4"><input type="number" id="reg_edad" class="form-control" placeholder="Edad" required></div>
+                        <div class="col-8"><input type="text" id="reg_cedula" class="form-control" placeholder="Cédula" required></div>
+                        <div class="col-12"><input type="email" id="reg_correo" class="form-control" placeholder="Correo Electrónico" required></div>
+                        <div class="col-6"><input type="text" id="reg_id_usuario" class="form-control" placeholder="ID Usuario" required></div>
+                        <div class="col-6"><input type="password" id="reg_contrasena" class="form-control" placeholder="Contraseña" required></div>
+                    </div>
+                    <button type="button" onclick="guardarUsuario()" class="btn btn-primary w-100 mt-4 fw-bold py-2">FINALIZAR REGISTRO</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalOlvido" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow" style="border-radius: 20px;">
+            <div class="modal-body p-4 text-center">
+                <span class="material-icons text-primary mb-3" style="font-size: 48px;">lock_reset</span>
+                <h5 class="fw-bold">Recuperar Acceso</h5>
+                <p class="text-muted small">Ingresa tu email electronico y te enviaremos tus credenciales</p>
+                <input type="email" id="correo_recuperar" class="form-control mb-3 text-center" placeholder="email@correo.com">
+                <button type="button" onclick="enviarCorreoRecuperacion()" class="btn btn-primary w-100 fw-bold">ENVIAR</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function guardarUsuario() {
+        const datos = {
+            nombres: document.getElementById('reg_nombres').value,
+            apellidos: document.getElementById('reg_apellidos').value,
+            edad: document.getElementById('reg_edad').value,
+            cedula: document.getElementById('reg_cedula').value,
+            correo: document.getElementById('reg_correo').value,
+            id_usuario: document.getElementById('reg_id_usuario').value,
+            contrasena: document.getElementById('reg_contrasena').value
+        };
+        fetch('/api/usuarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+        })
+        .then(r => r.json()).then(d => { 
+            alert(d.mensaje); 
+            if(d.mensaje.includes("exitosamente")) location.reload(); 
+        });
+    }
+
+    function enviarCorreoRecuperacion() {
+        const correo = document.getElementById('correo_recuperar').value;
+        if(!correo) return alert("Ingresa un correo");
+        fetch('/api/recuperar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ correo: correo })
+        })
+        .then(r => r.json()).then(d => alert(d.mensaje));
+    }
+</script>
+</body>
+</html>

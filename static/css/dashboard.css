@@ -1,0 +1,134 @@
+:root {
+    --tes-red: #2c3e50;
+    --tes-dark: #34495e;
+    --bg-light: #f4f6f9;
+}
+
+body {
+    background-color: var(--bg-light);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Barra de navegación superior */
+.navbar-tes {
+    background-color: var(--tes-red);
+    padding: 10px 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.navbar-brand-tes {
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: white !important;
+    display: flex;
+    align-items: center;
+}
+
+/* Estilo Dropdown Perfil */
+.user-profile-nav .dropdown-toggle {
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 30px;
+    transition: background 0.3s;
+}
+
+.user-profile-nav .dropdown-toggle:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+.user-avatar-circle {
+    width: 35px;
+    height: 35px;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+}
+
+.dropdown-menu {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    min-width: 220px;
+}
+
+.dropdown-item {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--tes-dark);
+    font-weight: 500;
+}
+
+.dropdown-item i {
+    color: #7f8c8d;
+}
+
+/* Dashboard Mosaico */
+.dashboard-container {
+    margin-top: 50px;
+}
+
+.welcome-text {
+    color: var(--tes-dark);
+    font-weight: 700;
+    font-size: 1.8rem;
+}
+
+.mosaico-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
+}
+
+.option-card {
+    background: white;
+    border-radius: 15px;
+    border: none;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.option-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+}
+
+.option-card-icon-wrapper {
+    background-color: #ffffff;
+    padding: 40px;
+    text-align: center;
+}
+
+.option-card-icon {
+    font-size: 50px !important;
+    color: var(--tes-red);
+}
+
+.option-card-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.option-card-footer {
+    background-color: var(--tes-dark);
+    padding: 15px;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}

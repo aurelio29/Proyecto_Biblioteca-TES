@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Libros - Biblioteca Virtual TES</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --primary-dark: #2c3e50; --tes-red: #b30000; }
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .navbar { background-color: var(--primary-dark); }
+        .upload-section {
+            background: white; border: 2px dashed #dee2e6;
+            border-radius: 15px; padding: 30px; text-align: center; margin-bottom: 30px;
+        }
+        .btn-publish { background-color: var(--tes-red); color: white; }
+        .btn-publish:hover { background-color: #8b0000; color: white; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/dashboard">
+                <span class="material-icons me-2">arrow_back</span> VOLVER AL DASHBOARD
+            </a>
+            <div class="text-white">
+                <span class="material-icons align-middle">account_circle</span> {{ nombre }}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="fw-bold mb-4">Gestionar Mis Libros</h2>
+        
+        <div class="upload-section shadow-sm">
+            <span class="material-icons text-muted" style="font-size: 48px;">cloud_upload</span>
+            <h5 class="mt-3">Subir nuevo archivo</h5>
+            <p class="text-muted small">Formatos permitidos: PDF, DOC, DOCX</p>
+            
+            <input type="file" id="fileInput" hidden accept=".pdf,.doc,.docx" onchange="subirArchivoServidor()">
+            
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                Seleccionar y Subir
+            </button>
+        </div>
+
+        <div class="card border-0 shadow-sm p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Documento</th>
+                            <th>Estado</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaMisLibros">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const USUARIO_ID = {{ usuario_id | tojson }};
+
+        // 1. FUNCIÓN PARA CARGAR LA LISTA DESDE EL SERVIDOR
+async function cargarMisLibros() {
+        console.log("Cargando libros para el usuario:", USUARIO_ID);
+        try {
+            const response = await fetch(`/api/mis_libros/${USUARIO_ID}`);
+            const libros = await response.json();
+            console.log("Libros recibidos del servidor:", libros);
+
+            const tabla = document.getElementById('listaMisLibros');
+            
+            if (libros.length === 0) {
+                tabla.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No tienes libros subidos aún.</td></tr>';
+                return;
+            }
+
+            tabla.innerHTML = libros.map(libro => `
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="material-icons text-secondary me-2">description</span>
+                            <strong>${libro.titulo}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        ${libro.publicado === 1 
+                            ? '<span class="badge bg-success">Publicado</span>' 
+                            : '<span class="badge bg-warning text-dark">Privado</span>'}
+                    </td>
+                    <td class="text-center">
+                        ${libro.publicado === 0 ? `
+                            <button onclick="publicarLibro(${libro.id})" class="btn btn-sm btn-publish">
+                                <span class="material-icons" style="font-size:16px">public</span> Publicar
+                            </button>
+                        ` : '<span class="text-muted small">Ya disponible en catálogo</span>'}
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error("Error al cargar la tabla:", error);
+        }
+    }
+        // 2. FUNCIÓN PARA SUBIR EL ARCHIVO REAL AL SERVIDOR
+async function subirArchivoServidor() {
+    const input = document.getElementById('fileInput');
+    if (input.files.length === 0) return;
+
+    const formData = new FormData();
+    // Verifica que el nombre sea 'archivo' igual que en el request.files['archivo'] de Python
+    formData.append('archivo', input.files[0]); 
+
+    try {
+        // Prueba quitando o poniendo el '/' inicial según sea necesario
+        const response = await fetch('/api/subir_libro', { 
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.status === 404) {
+            console.error("La ruta /api/subir_libro no fue encontrada en el servidor.");
+            alert("Error 404: El servidor no encuentra la ruta de subida.");
+            return;
+        }
+
+        const data = await response.json();
+        alert(data.mensaje);
+        cargarMisLibros();
+    } catch (error) {
+        console.error("Error de red o conexión:", error);
+    }
+}
+
+        // 3. FUNCIÓN PARA PUBLICAR
+        async function publicarLibro(id) {
+            try {
+                const response = await fetch(`/api/publicar/${id}`, {
+                    method: 'PUT'
+                });
+                const data = await response.json();
+                alert(data.mensaje);
+                cargarMisLibros(); // Refrescar la tabla
+            } catch (error) {
+                alert("Error al publicar");
+            }
+        }
+
+        // Cargar datos al iniciar
+        window.onload = cargarMisLibros;
+    </script>
+</body>
+</html>

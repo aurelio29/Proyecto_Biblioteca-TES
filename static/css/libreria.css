@@ -1,0 +1,100 @@
+:root {
+    --primary-dark: #2c3e50;
+    --tes-red: #b30000;
+    --bg-light: #f8f9fa;
+}
+
+body { 
+    background-color: var(--bg-light); 
+    font-family: 'Segoe UI', sans-serif; 
+}
+
+/* Barra de Navegación */
+.navbar { 
+    background-color: var(--primary-dark); 
+    padding: 0.8rem 0; 
+}
+
+.nav-link-inicio { 
+    color: white !important; 
+    text-decoration: none; 
+    font-weight: 600; 
+    display: flex; 
+    align-items: center;
+    gap: 5px;
+}
+
+/* Tarjeta Principal y Tabla */
+.main-card { 
+    border-radius: 15px; 
+    border: none; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+}
+
+.table thead { 
+    background-color: var(--primary-dark); 
+    color: white; 
+}
+
+/* Botones y Badges */
+.btn-request { 
+    background-color: var(--tes-red); 
+    color: white; 
+    border: none; 
+    font-weight: 600; 
+    transition: 0.3s;
+}
+
+.btn-request:hover { 
+    background-color: #8b0000; 
+    color: white; 
+}
+
+.badge-genre {
+    background-color: #e9ecef;
+    color: var(--primary-dark);
+    border: 1px solid #dee2e6;
+}
+
+/* Estilo para los filtros */
+.filter-label { 
+    font-size: 0.8rem; 
+    font-weight: 700; 
+    color: var(--primary-dark); 
+    margin-bottom: 5px; 
+    text-transform: uppercase;
+}
+
+.form-select, .form-control { 
+    border-radius: 8px; 
+}
+/* Contenedor de acciones */
+.columna-acciones {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Botones pequeños con iconos */
+.btn-tabla {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+}
+
+/* Ajuste del menú desplegable */
+.dropdown-menu-acciones {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.dropdown-item-accion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    padding: 10px 15px;
+}
