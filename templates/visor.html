@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Visor de Lectura - Biblioteca TES</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+        .visor-container { height: calc(100vh - 56px); width: 100%; background: #525659; }
+        /* Bloqueo de clics derechos para dificultar la descarga */
+        #visor-pdf { width: 100%; height: 100%; border: none; }
+        .no-copy { user-select: none; -webkit-user-select: none; }
+    </style>
+</head>
+<body class="no-copy" oncontextmenu="return false;">
+
+    <nav class="navbar navbar-dark bg-dark shadow-sm">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Lectura Segura: {{ titulo }}</span>
+            <button class="btn btn-outline-light btn-sm" onclick="window.close()">Cerrar Lectura</button>
+        </div>
+    </nav>
+
+    <div class="visor-container">
+        <!-- El parámetro #toolbar=0 oculta la barra de herramientas en la mayoría de navegadores -->
+        <iframe 
+            src="{{ url_for('ver_libro_api', id=id_libro) }}#toolbar=0&navpanes=0&scrollbar=0" 
+            id="visor-pdf">
+        </iframe>
+    </div>
+
+    <script>
+        // Evitar combinaciones de teclas como Ctrl+S o Ctrl+P
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'u')) {
+                e.preventDefault();
+                alert("La descarga e impresión no están permitidas en este visor.");
+            }
+        });
+    </script>
+</body>
+</html>

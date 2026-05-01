@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Docente - Biblioteca Virtual</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-tes sticky-top shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand navbar-brand-tes" href="#">
+                <span class="material-icons me-2">school</span>
+                BIBLIOTECA TES - DOCENTE
+            </a>
+            
+            <div class="user-profile-nav ms-auto dropdown">
+                <a href="#" class="dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span id="nombreUsuarioCompleto" class="fw-medium text-uppercase">{{ nombre }}</span>
+                    <div class="user-avatar-circle" id="avatarIniciales" style="background-color: #1a5276;">...</div>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow mt-2" aria-labelledby="userMenu">
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="/logout">
+                            <span class="material-icons">logout</span> Cerrar Sesión
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container dashboard-container">
+        <div class="row welcome-section mb-4">
+            <div class="col-12 text-center text-md-start">
+                <h2 class="welcome-text">¡Bienvenido Docente, {{ nombre }}! 🍎</h2>
+                <p class="text-muted">Accede al material académico y colabora con la comunidad educativa.</p>
+            </div>
+        </div>
+
+        <!-- Mosaico ajustado a 3 opciones -->
+        <div class="mosaico-grid">
+            
+            <!-- CATÁLOGO DE LIBROS -->
+            <a href="/libreria" class="card option-card shadow-sm">
+                <div class="option-card-icon-wrapper">
+                    <span class="material-icons option-card-icon">library_books</span>
+                </div>
+                <div class="option-card-body">
+                    <h5 class="option-card-title">Catálogo De Libros</h5>
+                    <p class="option-card-text">Consulta y descarga material bibliográfico.</p>
+                </div>
+                <div class="option-card-footer">
+                    Ir a Biblioteca <span class="material-icons" style="font-size:18px">arrow_forward</span>
+                </div>
+            </a>
+
+            <!-- MENSAJERÍA Y COMUNIDAD -->
+            <a href="/comunidad" class="option-card shadow-sm">
+                <div class="option-card-icon-wrapper">
+                    <span class="material-icons option-card-icon">forum</span>
+                </div>
+                <div class="option-card-body">
+                    <h5 class="fw-bold mb-1">Mensajería y Comunidad</h5>
+                    <p class="text-muted small">Interactúa con estudiantes y otros docentes.</p>
+                </div>
+                <div class="option-card-footer">Entrar al Foro</div>
+            </a>
+
+            <!-- PERFIL -->
+            <a href="/perfil/{{ usuario_id }}" class="option-card shadow-sm">
+                <div class="option-card-icon-wrapper">
+                    <span class="material-icons option-card-icon">settings</span>
+                </div>
+                <div class="option-card-body">
+                    <h5 class="fw-bold mb-1">Mi Cuenta</h5>
+                    <p class="text-muted small">Actualiza tus datos y gestiona tu contraseña.</p>
+                </div>
+                <div class="option-card-footer">Ver Perfil</div>
+            </a>
+
+        </div>
+        
+        <div class="row my-5"></div>
+    </div>
+
+    <script>
+        function generarIniciales() {
+            const nombreFull = "{{ nombre }}";
+            const partes = nombreFull.trim().split(" ");
+            let iniciales = "";
+            
+            if (partes.length >= 2) {
+                iniciales = partes[0][0] + partes[1][0]; 
+            } else if (partes.length > 0) {
+                iniciales = partes[0][0]; 
+            }
+            
+            const avatar = document.getElementById('avatarIniciales');
+            if (avatar) {
+                avatar.innerText = iniciales.toUpperCase();
+            }
+        }
+
+        window.onload = generarIniciales;
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

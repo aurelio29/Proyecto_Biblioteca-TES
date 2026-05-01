@@ -72,13 +72,15 @@
     </div>
 </div>
 
+<!-- Busca el modal id="modalOlvido" y reemplaza su contenido por este -->
 <div class="modal fade" id="modalOlvido" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow" style="border-radius: 20px;">
             <div class="modal-body p-4 text-center">
                 <span class="material-icons text-primary mb-3" style="font-size: 48px;">lock_reset</span>
                 <h5 class="fw-bold">Recuperar Acceso</h5>
-                <p class="text-muted small">Ingresa tu email electronico y te enviaremos tus credenciales</p>
+                <p class="text-muted small">Ingresa tu email registrado y te enviaremos tus credenciales</p>
+                <!-- ID fundamental para que el Script lo encuentre -->
                 <input type="email" id="correo_recuperar" class="form-control mb-3 text-center" placeholder="email@correo.com">
                 <button type="button" onclick="enviarCorreoRecuperacion()" class="btn btn-primary w-100 fw-bold">ENVIAR</button>
             </div>
@@ -109,16 +111,39 @@
         });
     }
 
-    function enviarCorreoRecuperacion() {
-        const correo = document.getElementById('correo_recuperar').value;
-        if(!correo) return alert("Ingresa un correo");
-        fetch('/api/recuperar', {
+// Agrega esto al final de tus scripts existentes
+async function enviarCorreoRecuperacion() {
+    const correoInput = document.getElementById('correo_recuperar').value;
+    
+    if (!correoInput) {
+        alert("Por favor, ingresa un correo electrónico.");
+        return;
+    }
+
+    try {
+        // El uso del '/' inicial es vital para localizar la API correctamente
+        const res = await fetch('/api/recuperar', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ correo: correo })
-        })
-        .then(r => r.json()).then(d => alert(d.mensaje));
+            body: JSON.stringify({ correo: correoInput })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("Éxito: " + data.mensaje);
+            // Cierra el modal automáticamente tras el éxito
+            const modalElement = document.getElementById('modalOlvido');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) modalInstance.hide();
+        } else {
+            alert("Error: " + data.mensaje);
+        }
+    } catch (error) {
+        console.error("Error en la petición:", error);
+        alert("Hubo un problema al conectar con el servidor.");
     }
+}
 </script>
 </body>
 </html>

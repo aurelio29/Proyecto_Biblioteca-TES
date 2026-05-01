@@ -125,10 +125,12 @@ body {
 }
 
 .option-card-footer {
-    background-color: var(--tes-dark);
-    padding: 15px;
+    background-color: #34495e;
     color: white;
+    padding: 12px;
     text-align: center;
     font-weight: bold;
-    font-size: 0.9rem;
+    margin-top: auto; 
+    width: 100%;
+    border-radius: 0 0 8px 8px;
 }

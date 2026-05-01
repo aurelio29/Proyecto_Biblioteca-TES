@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mis Favoritos - Biblioteca</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        .card-libro { transition: transform 0.2s; border: none; border-radius: 15px; }
+        .card-libro:hover { transform: translateY(-5px); }
+        .btn-fav { color: #e74c3c; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark shadow-sm" style="background-color: #2c3e50;">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="/dashboard">
+            <span class="material-icons me-2">arrow_back</span> Mis Favoritos
+        </a>
+    </div>
+</nav>
+
+<div class="container mt-5">
+    <div id="listaFavoritos" class="row row-cols-1 row-cols-md-3 g-4">
+        <!-- Cargando... -->
+    </div>
+</div>
+
+<script>
+    const USER_ID = "{{ usuario_id }}";
+
+    async function cargarFavoritos() {
+        const res = await fetch(`/api/favoritos/${USER_ID}`);
+        const libros = await res.json();
+        const contenedor = document.getElementById('listaFavoritos');
+        
+        if (libros.length === 0) {
+            contenedor.innerHTML = `<div class="col-12 text-center mt-5"><h5>No tienes libros favoritos todavía.</h5></div>`;
+            return;
+        }
+
+        contenedor.innerHTML = libros.map(l => `
+            <div class="col">
+                <div class="card h-100 card-libro shadow-sm">
+                    <div class="card-body text-center">
+                        <span class="material-icons text-secondary" style="font-size: 50px;">book</span>
+                        <h5 class="card-title fw-bold mt-2">${l.titulo}</h5>
+                        <p class="text-muted small">${l.autor}</p>
+                        <div class="d-grid gap-2">
+                            <a href="/api/ver_libro/${l.id}" target="_blank" class="btn btn-outline-primary btn-sm">Leer ahora</a>
+                            <button onclick="quitarFavorito(${l.id})" class="btn btn-link text-danger btn-sm text-decoration-none">
+                                <span class="material-icons align-middle">heart_broken</span> Quitar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function quitarFavorito(libroId) {
+        if(confirm("¿Quitar de tus favoritos?")) {
+            await fetch('/api/favoritos/eliminar', {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ usuario_id: USER_ID, libro_id: libroId })
+            });
+            cargarFavoritos();
+        }
+    }
+
+    window.onload = cargarFavoritos;
+</script>
+</body>
+</html>

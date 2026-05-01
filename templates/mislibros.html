@@ -3,157 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Libros - Biblioteca Virtual TES</title>
+    <title>Mis Libros - Biblioteca Virtual</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        :root { --primary-dark: #2c3e50; --tes-red: #b30000; }
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
-        .navbar { background-color: var(--primary-dark); }
-        .upload-section {
-            background: white; border: 2px dashed #dee2e6;
-            border-radius: 15px; padding: 30px; text-align: center; margin-bottom: 30px;
-        }
-        .btn-publish { background-color: var(--tes-red); color: white; }
-        .btn-publish:hover { background-color: #8b0000; color: white; }
+        :root { --primary-dark: #2c3e50; }
+        .navbar-tes { background-color: var(--primary-dark); }
+        .border-dashed { border: 2px dashed #ccc !important; transition: background 0.3s; cursor: pointer; }
+        .border-dashed:hover { background-color: #f8f9fa; border-color: #3498db !important; }
+        .badge-status { min-width: 90px; padding: 8px; }
     </style>
 </head>
-<body>
+<body class="bg-light">
 
-    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top navbar-tes">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="/dashboard">
+            <a class="nav-link text-white d-flex align-items-center" href="/dashboard">
                 <span class="material-icons me-2">arrow_back</span> VOLVER AL DASHBOARD
             </a>
-            <div class="text-white">
-                <span class="material-icons align-middle">account_circle</span> {{ nombre }}
+            <div class="ms-auto text-white d-flex align-items-center">
+                <span class="material-icons me-2">account_circle</span>
+                <span class="fw-bold">{{ nombre }}</span>
             </div>
         </div>
     </nav>
 
     <div class="container mt-5">
-        <h2 class="fw-bold mb-4">Gestionar Mis Libros</h2>
-        
-        <div class="upload-section shadow-sm">
-            <span class="material-icons text-muted" style="font-size: 48px;">cloud_upload</span>
-            <h5 class="mt-3">Subir nuevo archivo</h5>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold m-0">Gestionar Mis Libros</h3>
+        </div>
+
+        <!-- ZONA DE CARGA DE ARCHIVOS -->
+        <div class="card p-5 text-center mb-5 shadow-sm border-dashed" onclick="document.getElementById('inputArchivo').click()">
+            <div class="mb-3">
+                <span class="material-icons" style="font-size: 56px; color: #3498db;">cloud_upload</span>
+            </div>
+            <h5>Subir nuevo archivo</h5>
             <p class="text-muted small">Formatos permitidos: PDF, DOC, DOCX</p>
-            
-            <input type="file" id="fileInput" hidden accept=".pdf,.doc,.docx" onchange="subirArchivoServidor()">
-            
-            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                Seleccionar y Subir
+            <input type="file" id="inputArchivo" hidden accept=".pdf,.doc,.docx" onchange="subirLibro()">
+            <button class="btn btn-primary px-5 shadow-sm">
+                Seleccionar Documento
             </button>
         </div>
 
-        <div class="card border-0 shadow-sm p-4">
+        <!-- TABLA DE DOCUMENTOS -->
+        <div class="card shadow-sm border-0 overflow-hidden">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Documento</th>
-                            <th>Estado</th>
-                            <th class="text-center">Acciones</th>
+                            <th class="ps-4 py-3">Documento</th>
+                            <th class="text-center py-3">Estado</th>
+                            <th class="text-center pe-4 py-3">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="listaMisLibros">
-                        </tbody>
+                    <tbody id="tablaMisLibros">
+                        <tr>
+                            <td colspan="3" class="text-center p-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Cargando biblioteca personal...</p>
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        const USUARIO_ID = {{ usuario_id | tojson }};
-
-        // 1. FUNCIÓN PARA CARGAR LA LISTA DESDE EL SERVIDOR
-async function cargarMisLibros() {
-        console.log("Cargando libros para el usuario:", USUARIO_ID);
-        try {
-            const response = await fetch(`/api/mis_libros/${USUARIO_ID}`);
-            const libros = await response.json();
-            console.log("Libros recibidos del servidor:", libros);
-
-            const tabla = document.getElementById('listaMisLibros');
-            
-            if (libros.length === 0) {
-                tabla.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No tienes libros subidos aún.</td></tr>';
-                return;
-            }
-
-            tabla.innerHTML = libros.map(libro => `
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <span class="material-icons text-secondary me-2">description</span>
-                            <strong>${libro.titulo}</strong>
+    <!-- MODAL EDITAR CAMPOS -->
+    <div class="modal fade" id="modalEditarCampos" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header text-white" style="background-color: var(--primary-dark);">
+                    <h5 class="modal-title fw-bold">Editar Metadatos</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="edit_id">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">TÍTULO DEL LIBRO</label>
+                        <input type="text" id="edit_titulo" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">AUTOR</label>
+                        <input type="text" id="edit_autor" class="form-control">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-7 mb-3">
+                            <label class="form-label fw-bold small">GÉNERO</label>
+                            <input type="text" id="edit_genero" class="form-control">
                         </div>
-                    </td>
-                    <td>
-                        ${libro.publicado === 1 
-                            ? '<span class="badge bg-success">Publicado</span>' 
-                            : '<span class="badge bg-warning text-dark">Privado</span>'}
-                    </td>
-                    <td class="text-center">
-                        ${libro.publicado === 0 ? `
-                            <button onclick="publicarLibro(${libro.id})" class="btn btn-sm btn-publish">
-                                <span class="material-icons" style="font-size:16px">public</span> Publicar
-                            </button>
-                        ` : '<span class="text-muted small">Ya disponible en catálogo</span>'}
-                    </td>
-                </tr>
-            `).join('');
-        } catch (error) {
-            console.error("Error al cargar la tabla:", error);
-        }
-    }
-        // 2. FUNCIÓN PARA SUBIR EL ARCHIVO REAL AL SERVIDOR
-async function subirArchivoServidor() {
-    const input = document.getElementById('fileInput');
-    if (input.files.length === 0) return;
+                        <div class="col-md-5 mb-3">
+                            <label class="form-label fw-bold small">AÑO</label>
+                            <input type="number" id="edit_anio" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" onclick="guardarCambiosCampos()" class="btn btn-primary px-4">Actualizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    const formData = new FormData();
-    // Verifica que el nombre sea 'archivo' igual que en el request.files['archivo'] de Python
-    formData.append('archivo', input.files[0]); 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const USER_ID = "{{ usuario_id }}";
+        const modalCampos = new bootstrap.Modal(document.getElementById('modalEditarCampos'));
 
-    try {
-        // Prueba quitando o poniendo el '/' inicial según sea necesario
-        const response = await fetch('/api/subir_libro', { 
-            method: 'POST',
-            body: formData
-        });
-
-        if (response.status === 404) {
-            console.error("La ruta /api/subir_libro no fue encontrada en el servidor.");
-            alert("Error 404: El servidor no encuentra la ruta de subida.");
-            return;
-        }
-
-        const data = await response.json();
-        alert(data.mensaje);
-        cargarMisLibros();
-    } catch (error) {
-        console.error("Error de red o conexión:", error);
-    }
-}
-
-        // 3. FUNCIÓN PARA PUBLICAR
-        async function publicarLibro(id) {
+        // Cargar lista de libros usando rutas absolutas
+        async function cargarMisLibros() {
             try {
-                const response = await fetch(`/api/publicar/${id}`, {
-                    method: 'PUT'
-                });
-                const data = await response.json();
-                alert(data.mensaje);
-                cargarMisLibros(); // Refrescar la tabla
-            } catch (error) {
-                alert("Error al publicar");
+                const res = await fetch(`/api/mis_libros/${USER_ID}`);
+                if (!res.ok) throw new Error("No se pudo conectar con la API");
+                
+                const libros = await res.json();
+                const tabla = document.getElementById('tablaMisLibros');
+                
+                if (libros.length === 0) {
+                    tabla.innerHTML = `<tr><td colspan="3" class="text-center p-5 text-muted">No tienes libros subidos aún.</td></tr>`;
+                    return;
+                }
+
+                tabla.innerHTML = libros.map(l => `
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <span class="material-icons text-secondary me-3">description</span>
+                                <div>
+                                    <div class="fw-bold text-dark">${l.titulo}</div>
+                                    <small class="text-muted">${l.autor} | ${l.genero}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-status ${l.publicado ? 'bg-success' : 'bg-warning text-dark'}">
+                                ${l.publicado ? 'PUBLICADO' : 'BORRADOR'}
+                            </span>
+                        </td>
+                        <td class="text-center pe-4">
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border dropdown-toggle" data-bs-toggle="dropdown">
+                                    Opciones
+                                </button>
+                                <ul class="dropdown-menu shadow border-0">
+                                    <li><a class="dropdown-item d-flex align-items-center" href="#" onclick="publicarLibro(${l.id})">
+                                        <span class="material-icons text-success me-2">publish</span> Publicar</a></li>
+                                    
+                                    <li><a class="dropdown-item d-flex align-items-center" href="#" onclick="abrirModalCampos(${l.id}, '${l.titulo}', '${l.autor}', '${l.genero}', ${l.anio})">
+                                        <span class="material-icons text-primary me-2">edit</span> Editar Datos</a></li>
+                                    
+                                    <li><a class="dropdown-item d-flex align-items-center" href="#" onclick="deshabilitarLibro(${l.id})">
+                                        <span class="material-icons text-warning me-2">visibility_off</span> Deshabilitar</a></li>
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <li><a class="dropdown-item text-danger d-flex align-items-center" href="#" onclick="eliminarLibro(${l.id})">
+                                        <span class="material-icons me-2">delete</span> Eliminar</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) { 
+                console.error("Error:", e);
+                document.getElementById('tablaMisLibros').innerHTML = `<tr><td colspan="3" class="text-center text-danger p-4">Error al cargar datos. Reintente más tarde.</td></tr>`;
             }
         }
 
-        // Cargar datos al iniciar
+        async function subirLibro() {
+            const input = document.getElementById('inputArchivo');
+            if (input.files.length === 0) return;
+
+            const formData = new FormData();
+            formData.append('archivo', input.files[0]);
+
+            try {
+                const res = await fetch('/api/subir_libro', { method: 'POST', body: formData });
+                if (res.ok) {
+                    alert("¡Libro subido con éxito!");
+                    cargarMisLibros();
+                } else {
+                    alert("Error: Verifique el formato o tamaño del archivo.");
+                }
+            } catch (e) { alert("Error de conexión al servidor."); }
+        }
+
+        async function publicarLibro(id) {
+            const res = await fetch(`/api/publicar/${id}`, { method: 'PUT' });
+            if (res.ok) cargarMisLibros();
+        }
+
+        async function deshabilitarLibro(id) {
+            const res = await fetch(`/api/deshabilitar/${id}`, { method: 'PUT' });
+            if (res.ok) cargarMisLibros();
+        }
+
+        function abrirModalCampos(id, t, a, g, y) {
+            document.getElementById('edit_id').value = id;
+            document.getElementById('edit_titulo').value = t;
+            document.getElementById('edit_autor').value = a;
+            document.getElementById('edit_genero').value = g;
+            document.getElementById('edit_anio').value = y;
+            modalCampos.show();
+        }
+
+        async function guardarCambiosCampos() {
+            const id = document.getElementById('edit_id').value;
+            const datos = {
+                titulo: document.getElementById('edit_titulo').value,
+                autor: document.getElementById('edit_autor').value,
+                genero: document.getElementById('edit_genero').value,
+                anio: document.getElementById('edit_anio').value
+            };
+
+            const res = await fetch(`/api/books/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            if (res.ok) {
+                modalCampos.hide();
+                cargarMisLibros();
+            }
+        }
+
+        async function eliminarLibro(id) {
+            if (confirm("¿Eliminar este libro permanentemente?")) {
+                const res = await fetch(`/api/books/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarMisLibros();
+            }
+        }
+
         window.onload = cargarMisLibros;
     </script>
 </body>
