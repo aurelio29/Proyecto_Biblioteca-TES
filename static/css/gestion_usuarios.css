@@ -1,0 +1,7 @@
+:root { --primary-tes: #2c3e50; }
+.navbar-tes { background-color: var(--primary-dark); color: white; }
+.badge-admin { background-color: #e74c3c; color: white; }
+.badge-docente { background-color: #3498db; color: white; }
+.badge-estudiante { background-color: #168143; color: white; }
+.modal-header { background-color: var(--primary-tes); color: white; }
+.table-responsive { border-radius: 8px; overflow: hidden; }

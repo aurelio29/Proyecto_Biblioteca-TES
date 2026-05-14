@@ -1,0 +1,4 @@
+.card-libro { transition: transform 0.2s; border: none; border-radius: 15px; }
+.card-libro:hover { transform: translateY(-5px); }
+.btn-fav { color: #e74c3c; }
+#visorIframe { width: 100%; eight: calc(100vh - 56px); border: none;}

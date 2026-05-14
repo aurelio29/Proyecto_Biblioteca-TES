@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mensajería - Biblioteca TES</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mensajeria.css') }}">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-dark p-3" style="background-color: #2c3e50;">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/dashboard">
+                <span class="material-icons">home</span> INICIO
+                        <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown">
+                    <span class="material-icons me-2">account_circle</span>
+                    <strong id="nombreUsuario">{{ session['nombre'] }}</strong>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow mt-2">
+                <li><a class="dropdown-item" href="/logout"><span class="material-icons me-2 align-middle">logout</span>Cerrar Sesión</a></li>
+            </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-3">
+        <div class="chat-layout shadow-sm">
+            <!-- Sidebar -->
+            <div class="sidebar p-3 bg-white">
+                <h6 class="fw-bold small text-muted">BUSCAR NUEVOS AMIGOS</h6>
+                <div class="input-group mb-3">
+                    <input type="text" id="inputBusqueda" class="form-control form-control-sm" placeholder="Nombre...">
+                    <button class="btn btn-primary btn-sm" onclick="buscarUsuarios()"><span class="material-icons" style="font-size: 16px;">search</span></button>
+                </div>
+                <div id="listaResultados" class="mb-3"></div>
+
+                <h6 class="fw-bold small text-muted border-top pt-3">MIS CHATS</h6>
+                <div id="listaContactos" class="list-group list-group-flush">
+                    <!-- Se carga al iniciar -->
+                </div>
+            </div>
+
+            <!-- Area de Chat -->
+            <div class="chat-area">
+                <div class="p-3 border-bottom bg-white fw-bold" id="headerChat">Selecciona un contacto</div>
+                
+                <div class="msg-box" id="cajaMensajes"></div>
+
+                <div id="emojiPicker" class="emoji-picker shadow">
+                    <span onclick="addEmoji('😊')">😊</span><span onclick="addEmoji('😂')">😂</span>
+                    <span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('❤️')">❤️</span>
+                    <span onclick="addEmoji('📚')">📚</span><span onclick="addEmoji('🔥')">🔥</span>
+                </div>
+
+                <div class="p-3 bg-white border-top">
+                    <div class="input-group">
+                        <button class="btn btn-outline-secondary" onclick="toggleEmoji()"><span class="material-icons">mood</span></button>
+                        
+                        <label class="btn btn-outline-secondary m-0">
+                            <span class="material-icons">image</span>
+                            <input type="file" id="inputImagen" hidden accept="image/*" onchange="subirImagen()">
+                        </label>
+
+                        <input type="text" id="txtMensaje" class="form-control" placeholder="Escribe un mensaje..." onkeypress="if(event.key==='Enter') enviarMensaje()">
+                        
+                        <button class="btn btn-primary" onclick="enviarMensaje()"><span class="material-icons">send</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MI_ID = "{{ usuario_id }}";
+        let contactoSeleccionado = null;
+
+        async function buscarUsuarios() {
+            const q = document.getElementById('inputBusqueda').value;
+            const res = await fetch(`/api/usuarios/buscar?q=${q}`);
+            
+            // Si el backend devuelve HTML en lugar de JSON, esto fallará (error image_c0149a.png)
+            try {
+                const users = await res.json();
+                document.getElementById('listaResultados').innerHTML = users.map(u => `
+                    <div class="d-flex justify-content-between align-items-center p-2 border-bottom small bg-light rounded mb-1">
+                        <span>${u.nombres}</span>
+                        <button class="btn btn-sm btn-success p-0 px-1" onclick="enviarSolicitud(${u.id})"><span class="material-icons" style="font-size:16px">person_add</span></button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                console.error("Error: El servidor no envió un JSON válido. Revisa la ruta /api/usuarios/buscar");
+            }
+        }
+
+        async function enviarSolicitud(idAmigo) {
+            const res = await fetch('/api/amistad/enviar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ amigo_id: idAmigo })
+            });
+            if(res.ok) {
+                alert("Tu solicitud fue enviada correctamente");
+                cargarContactos(); // Actualiza la lista de "Mis Chats"
+            }
+        }
+
+        async function enviarMensaje() {
+            const txt = document.getElementById('txtMensaje');
+            if(!txt.value || !contactoSeleccionado) return;
+
+            await fetch('/api/mensajes/enviar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ receptor_id: contactoSeleccionado, contenido: txt.value })
+            });
+            txt.value = '';
+            actualizarMensajes();
+        }
+
+        async function subirImagen() {
+            const fileInput = document.getElementById('inputImagen');
+            if(!fileInput.files[0] || !contactoSeleccionado) return;
+
+            const formData = new FormData();
+            formData.append('imagen', fileInput.files[0]);
+            formData.append('receptor_id', contactoSeleccionado);
+
+            await fetch('/api/mensajes/subir-imagen', {
+                method: 'POST',
+                body: formData
+            });
+            actualizarMensajes();
+        }
+
+        async function actualizarMensajes() {
+            if(!contactoSeleccionado) return;
+            const res = await fetch(`/api/mensajes/${contactoSeleccionado}`);
+            const msgs = await res.json();
+            const caja = document.getElementById('cajaMensajes');
+            
+            caja.innerHTML = msgs.map(m => {
+                const esImg = m.contenido.includes('/static/uploads/');
+                const content = esImg ? `<img src="${m.contenido}" class="chat-img">` : m.contenido;
+                return `<div class="bubble ${m.emisor_id == MI_ID ? 'sent' : 'received'}">${content}</div>`;
+            }).join('');
+            caja.scrollTop = caja.scrollHeight;
+        }
+
+        async function cargarContactos() {
+    const res = await fetch('/api/amistad/mis-contactos');
+    const contactos = await res.json();
+    document.getElementById('listaContactos').innerHTML = contactos.map(c => `
+        <button class="list-group-item list-group-item-action border-0 mb-1 rounded" 
+                onclick="seleccionarContacto(${c.id}, '${c.nombres}')">
+            <div class="d-flex align-items-center">
+                <span class="material-icons me-2 text-primary">account_circle</span>
+                <span>${c.nombres}</span>
+            </div>
+        </button>
+    `).join('');
+}
+
+// 3. Función para activar el chat al hacer clic
+function seleccionarContacto(id, nombre) {
+    contactoSeleccionado = id;
+    document.getElementById('headerChat').innerText = "Chat con " + nombre;
+    document.getElementById('cajaMensajes').innerHTML = ""; // Limpia para cargar nuevos
+    actualizarMensajes();
+}
+
+// Ejecutar al cargar la página
+window.onload = cargarContactos;
+
+        function toggleEmoji() { document.getElementById('emojiPicker').style.display = 
+            document.getElementById('emojiPicker').style.display === 'block' ? 'none' : 'block'; }
+        
+        function addEmoji(emoji) { document.getElementById('txtMensaje').value += emoji; toggleEmoji(); }
+
+        setInterval(actualizarMensajes, 3000); // Polling cada 3 seg
+    </script>
+</body>
+</html>

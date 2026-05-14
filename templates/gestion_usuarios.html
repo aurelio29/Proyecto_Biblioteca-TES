@@ -6,35 +6,65 @@
     <title>Gestión de Usuarios - Biblioteca Virtual</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-        :root { --primary-tes: #2c3e50; }
-        .navbar-tes { background-color: var(--primary-tes); color: white; }
-        .badge-admin { background-color: #e74c3c; color: white; }
-        .badge-docente { background-color: #3498db; color: white; }
-        .badge-usuario { background-color: #27ae60; color: white; }
-        .modal-header { background-color: var(--primary-tes); color: white; }
-        .table-responsive { border-radius: 8px; overflow: hidden; }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gestion_usuarios.css') }}">
 </head>
 <body class="bg-light">
 
-    <!-- BARRA DE NAVEGACIÓN -->
-    <nav class="navbar navbar-expand-lg navbar-tes shadow-sm mb-4">
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #2c3e50; padding: 0.8rem 2rem;">
         <div class="container">
-            <a class="nav-link text-white d-flex align-items-center" href="/dashboard">
-                <span class="material-icons me-2">arrow_back</span> PANEL ADMIN
+            <a class="nav-link-inicio text-white text-decoration-none" href="/dashboard">
+                <span class="material-icons align-middle">home</span> INICIO
             </a>
-            <span class="navbar-brand ms-3 fw-bold">SISTEMA DE GESTIÓN DE USUARIOS</span>
+            <div class="dropdown">
+                <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown">
+                    <span class="material-icons me-2">account_circle</span>
+                    <strong id="nombreUsuario">{{ nombre }}</strong>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow mt-2">
+                    <li><a class="dropdown-item" href="/logout"><span class="material-icons me-2">logout</span>Cerrar Sesión</a></li>
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container mt-4">
         <div class="card shadow-sm border-0 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark">Listado de Usuarios</h4>
                 <button class="btn btn-primary d-flex align-items-center gap-2 shadow-sm" onclick="abrirModalCrear()">
                     <span class="material-icons">person_add</span> Nuevo Usuario
                 </button>
+            </div>
+
+            <!-- Barra de Búsqueda y Filtros -->
+            <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <span class="material-icons text-muted">search</span>
+                        </span>
+                        <input type="text" id="busquedaGeneral" class="form-control border-start-0" 
+                               placeholder="Buscar por nombre o ID..." onkeyup="filtrarTabla()">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="filtroRol" class="form-select" onchange="filtrarTabla()">
+                        <option value="">Todos los Roles</option>
+                        <option value="admin">Administrador</option>
+                        <option value="docente">Docente</option>
+                        <option value="estudiante">Estudiante</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="filtroEstado" class="form-select" onchange="filtrarTabla()">
+                        <option value="">Todos los Estados</option>
+                        <option value="habilitado">Habilitados</option>
+                        <option value="deshabilitado">Deshabilitados</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">Limpiar</button>
+                </div>
             </div>
 
             <div class="table-responsive">
@@ -46,73 +76,66 @@
                             <th>Cédula</th>
                             <th>Correo</th>
                             <th>Rol</th>
+                            <th>Estado</th>
                             <th class="text-center">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaUsuarios">
-                        <!-- Carga dinámica -->
-                    </tbody>
+                    <tbody id="tablaUsuarios"></tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- MODAL PARA CREAR Y EDITAR USUARIO -->
+    <!-- Modal Usuario -->
     <div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content border-0">
-                <div class="modal-header border-0">
+                <div class="modal-header border-0 bg-primary text-white">
                     <h5 class="modal-title fw-bold" id="tituloModal">Usuario</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="userId">
-                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold small">NOMBRES</label>
-                            <input type="text" id="userNombres" class="form-control" placeholder="Ej: Carlos">
+                            <input type="text" id="userNombres" class="form-control">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold small">APELLIDOS</label>
-                            <input type="text" id="userApellidos" class="form-control" placeholder="Ej: Moreira">
+                            <input type="text" id="userApellidos" class="form-control">
                         </div>
                     </div>
-
                     <div class="mb-3">
-                        <label class="form-label fw-bold small">CÉDULA DE IDENTIDAD</label>
-                        <input type="text" id="userCedula" class="form-control" placeholder="Ingrese 10 dígitos">
+                        <label class="form-label fw-bold small">CÉDULA</label>
+                        <input type="text" id="userCedula" class="form-control">
                     </div>
-
                     <div class="mb-3">
-                        <label class="form-label fw-bold small">CORREO ELECTRÓNICO</label>
-                        <input type="email" id="userCorreo" class="form-control" placeholder="usuario@tes.edu.ec">
+                        <label class="form-label fw-bold small">CORREO</label>
+                        <input type="email" id="userCorreo" class="form-control">
                     </div>
-
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold small">ID DE ACCESO</label>
-                            <input type="text" id="userLogin" class="form-control" placeholder="Nombre de usuario">
+                            <label class="form-label fw-bold small">ID ACCESO</label>
+                            <input type="text" id="userLogin" class="form-control">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold small">ROL DEL SISTEMA</label>
+                            <label class="form-label fw-bold small">ROL</label>
                             <select id="userRol" class="form-select">
-                                <option value="usuario">Estudiante</option>
+                                <option value="estudiante">Estudiante</option>
                                 <option value="docente">Docente</option>
                                 <option value="admin">Administrador</option>
                             </select>
                         </div>
                     </div>
-
                     <div id="sectionClave" class="mb-3">
-                        <label class="form-label fw-bold small">CONTRASEÑA TEMPORAL</label>
-                        <input type="password" id="userClave" class="form-control" placeholder="Asigne una clave inicial">
-                        <div class="form-text">Para ediciones, deje en blanco si no desea cambiarla.</div>
+                        <label class="form-label fw-bold small">CONTRASEÑA</label>
+                        <input type="password" id="userClave" class="form-control" placeholder="Dejar en blanco para no cambiar">
                     </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary px-4" onclick="guardarUsuario()">Guardar Usuario</button>
+                    <button type="button" class="btn btn-primary px-4" onclick="guardarUsuario()">Guardar</button>
                 </div>
             </div>
         </div>
@@ -121,35 +144,100 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const modalUser = new bootstrap.Modal(document.getElementById('modalUsuario'));
+        let usuariosOriginales = [];
 
-        // 1. CARGAR TODOS LOS USUARIOS
         async function cargarUsuarios() {
             try {
                 const res = await fetch('/api/admin/usuarios');
                 const data = await res.json();
-                const tabla = document.getElementById('tablaUsuarios');
+                usuariosOriginales = data;
+                renderizarTabla(usuariosOriginales);
+            } catch (e) {
+                console.error("Error al cargar usuarios:", e);
+            }
+        }
+
+        function renderizarTabla(lista) {
+            const tabla = document.getElementById('tablaUsuarios');
+            tabla.innerHTML = lista.map(u => {
+                const esActivo = (u.activo === true || u.activo === 1);
+                const estadoTexto = esActivo ? 'HABILITADO' : 'DESHABILITADO';
+                const estadoClase = esActivo ? 'success' : 'secondary';
                 
-                tabla.innerHTML = data.map(u => `
+                const botonAccion = esActivo 
+                    ? `<button class="btn btn-sm btn-outline-warning me-1" onclick="cambiarEstado(${u.id})" title="Inhabilitar">
+                        <span class="material-icons" style="font-size:18px">block</span>
+                       </button>`
+                    : `<button class="btn btn-sm btn-outline-success me-1" onclick="cambiarEstado(${u.id})" title="Habilitar">
+                        <span class="material-icons" style="font-size:18px">check_circle</span>
+                       </button>`;
+
+                return `
                     <tr>
                         <td><code>${u.id_usuario}</code></td>
                         <td>${u.nombres} ${u.apellidos}</td>
                         <td>${u.cedula}</td>
                         <td>${u.correo || '---'}</td>
-                        <td><span class="badge badge-${u.rol}">${u.rol.toUpperCase()}</span></td>
+                        <td><span class="badge bg-info text-dark">${u.rol.toUpperCase()}</span></td>
+                        <td><span class="badge bg-${estadoClase}">${estadoTexto}</span></td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editarUser(${u.id})">
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editarUser(${u.id})" title="Editar">
                                 <span class="material-icons" style="font-size:18px">edit</span>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarUser(${u.id})">
+                            ${botonAccion}
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarUser(${u.id})" title="Eliminar">
                                 <span class="material-icons" style="font-size:18px">delete</span>
                             </button>
                         </td>
-                    </tr>
-                `).join('');
-            } catch (e) { console.error("Error al cargar usuarios:", e); }
+                    </tr>`;
+            }).join('');
         }
 
-        // 2. ABRIR MODAL PARA CREAR (LIMPIO)
+        function filtrarTabla() {
+            const busqueda = document.getElementById('busquedaGeneral').value.toLowerCase();
+            const rolSel = document.getElementById('filtroRol').value;
+            const estSel = document.getElementById('filtroEstado').value;
+
+            const filtrados = usuariosOriginales.filter(u => {
+                const nombreCompleto = (u.nombres + " " + u.apellidos).toLowerCase();
+                const coincideTexto = nombreCompleto.includes(busqueda) || 
+                                     u.id_usuario.toLowerCase().includes(busqueda) || 
+                                     (u.correo && u.correo.toLowerCase().includes(busqueda));
+                
+                const coincideRol = rolSel === "" || u.rol === rolSel;
+                
+                const esActivo = (u.activo === true || u.activo === 1);
+                const estadoUsuario = esActivo ? 'habilitado' : 'deshabilitado';
+                const coincideEstado = estSel === "" || estadoUsuario === estSel;
+
+                return coincideTexto && coincideRol && coincideEstado;
+            });
+            renderizarTabla(filtrados);
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('busquedaGeneral').value = "";
+            document.getElementById('filtroRol').value = "";
+            document.getElementById('filtroEstado').value = "";
+            renderizarTabla(usuariosOriginales);
+        }
+
+        async function cambiarEstado(id) {
+            if (id === 0) return alert("No se puede inhabilitar al admin maestro");
+            try {
+                const res = await fetch(`/api/admin/usuarios/estado/${id}`, { method: 'PUT' });
+                if (res.ok) cargarUsuarios();
+            } catch (e) { alert("Error al cambiar estado"); }
+        }
+
+        async function eliminarUser(id) {
+            if (id === 0) return alert("Acción prohibida");
+            if (confirm("¿Eliminar usuario permanentemente?")) {
+                const res = await fetch(`/api/admin/usuarios/${id}`, { method: 'DELETE' });
+                if (res.ok) cargarUsuarios();
+            }
+        }
+
         function abrirModalCrear() {
             document.getElementById('userId').value = "";
             document.getElementById('userNombres').value = "";
@@ -159,29 +247,24 @@
             document.getElementById('userLogin').value = "";
             document.getElementById('userRol').value = "usuario";
             document.getElementById('userClave').value = "";
-            
             document.getElementById('tituloModal').innerText = "Registrar Nuevo Usuario";
             modalUser.show();
         }
 
-        // 3. ABRIR MODAL PARA EDITAR (CON DATOS)
         async function editarUser(id) {
             const res = await fetch(`/api/admin/usuarios/${id}`);
             const u = await res.json();
-            
             document.getElementById('userId').value = u.id;
             document.getElementById('userNombres').value = u.nombres;
             document.getElementById('userApellidos').value = u.apellidos;
-            document.getElementById('userCedula').value = u.cedula || "";
-            document.getElementById('userCorreo').value = u.correo || "";
+            document.getElementById('userCedula').value = u.cedula;
+            document.getElementById('userCorreo').value = u.correo;
             document.getElementById('userLogin').value = u.id_usuario;
             document.getElementById('userRol').value = u.rol;
-            
             document.getElementById('tituloModal').innerText = "Modificar Usuario";
             modalUser.show();
         }
 
-        // 4. GUARDAR (CREAR O EDITAR)
         async function guardarUsuario() {
             const id = document.getElementById('userId').value;
             const datos = {
@@ -193,42 +276,19 @@
                 rol: document.getElementById('userRol').value,
                 contrasena: document.getElementById('userClave').value
             };
-
-            if (!datos.nombres || !datos.id_usuario) {
-                alert("Por favor, complete los campos obligatorios.");
-                return;
-            }
-
             const metodo = id ? 'PUT' : 'POST';
             const url = id ? `/api/admin/usuarios/${id}` : '/api/usuarios';
 
-            try {
-                const res = await fetch(url, {
-                    method: metodo,
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(datos)
-                });
-
-                if (res.ok) {
-                    modalUser.hide();
-                    cargarUsuarios();
-                    alert(id ? "Usuario actualizado correctamente" : "Nuevo usuario registrado");
-                } else {
-                    alert("Error: El ID de usuario o cédula ya podrían estar registrados.");
-                }
-            } catch (e) { alert("Error de conexión con el servidor."); }
-        }
-
-        // 5. ELIMINAR USUARIO
-        async function eliminarUser(id) {
-            if (id == 0) {
-                alert("No es posible eliminar la cuenta maestra de administración.");
-                return;
-            }
-            if (confirm("¿Está seguro de eliminar esta cuenta permanentemente?")) {
-                const res = await fetch(`/api/admin/usuarios/${id}`, { method: 'DELETE' });
-                if (res.ok) cargarUsuarios();
-                else alert("Error al intentar eliminar el usuario.");
+            const res = await fetch(url, {
+                method: metodo,
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(datos)
+            });
+            if (res.ok) {
+                modalUser.hide();
+                cargarUsuarios();
+            } else {
+                alert("Error al guardar");
             }
         }
 

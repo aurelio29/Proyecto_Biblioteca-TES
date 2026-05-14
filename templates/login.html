@@ -72,7 +72,7 @@
     </div>
 </div>
 
-<!-- Busca el modal id="modalOlvido" y reemplaza su contenido por este -->
+
 <div class="modal fade" id="modalOlvido" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-sm">
         <div class="modal-content border-0 shadow" style="border-radius: 20px;">
@@ -80,7 +80,6 @@
                 <span class="material-icons text-primary mb-3" style="font-size: 48px;">lock_reset</span>
                 <h5 class="fw-bold">Recuperar Acceso</h5>
                 <p class="text-muted small">Ingresa tu email registrado y te enviaremos tus credenciales</p>
-                <!-- ID fundamental para que el Script lo encuentre -->
                 <input type="email" id="correo_recuperar" class="form-control mb-3 text-center" placeholder="email@correo.com">
                 <button type="button" onclick="enviarCorreoRecuperacion()" class="btn btn-primary w-100 fw-bold">ENVIAR</button>
             </div>
@@ -90,28 +89,37 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function guardarUsuario() {
-        const datos = {
-            nombres: document.getElementById('reg_nombres').value,
-            apellidos: document.getElementById('reg_apellidos').value,
-            edad: document.getElementById('reg_edad').value,
-            cedula: document.getElementById('reg_cedula').value,
-            correo: document.getElementById('reg_correo').value,
-            id_usuario: document.getElementById('reg_id_usuario').value,
-            contrasena: document.getElementById('reg_contrasena').value
-        };
-        fetch('/api/usuarios', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(datos)
-        })
-        .then(r => r.json()).then(d => { 
-            alert(d.mensaje); 
-            if(d.mensaje.includes("exitosamente")) location.reload(); 
-        });
-    }
+function guardarUsuario() {
+    const datos = {
+        nombres: document.getElementById('reg_nombres').value,
+        apellidos: document.getElementById('reg_apellidos').value,
+        edad: document.getElementById('reg_edad').value,
+        cedula: document.getElementById('reg_cedula').value,
+        correo: document.getElementById('reg_correo').value,
+        id_usuario: document.getElementById('reg_id_usuario').value,
+        contrasena: document.getElementById('reg_contrasena').value
+    };
 
-// Agrega esto al final de tus scripts existentes
+    fetch('/api/usuarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.mensaje) {
+            alert("¡Éxito!: " + data.mensaje);
+            window.location.reload(); 
+        } else if (data.error) {
+            alert("Atención: " + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert("Ocurrió un error inesperado en la conexión.");
+    });
+}
+
 async function enviarCorreoRecuperacion() {
     const correoInput = document.getElementById('correo_recuperar').value;
     
@@ -121,7 +129,6 @@ async function enviarCorreoRecuperacion() {
     }
 
     try {
-        // El uso del '/' inicial es vital para localizar la API correctamente
         const res = await fetch('/api/recuperar', { 
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -132,7 +139,6 @@ async function enviarCorreoRecuperacion() {
 
         if (res.ok) {
             alert("Éxito: " + data.mensaje);
-            // Cierra el modal automáticamente tras el éxito
             const modalElement = document.getElementById('modalOlvido');
             const modalInstance = bootstrap.Modal.getInstance(modalElement);
             if (modalInstance) modalInstance.hide();

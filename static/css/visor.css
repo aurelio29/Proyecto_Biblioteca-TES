@@ -1,0 +1,5 @@
+body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+.visor-container { height: calc(100vh - 56px); width: 100%; background: #525659; }
+/* Bloqueo de clics derechos para dificultar la descarga */
+#visor-pdf { width: 100%; height: 100%; border: none; }
+.no-copy { user-select: none; -webkit-user-select: none; }

@@ -37,7 +37,7 @@ app.config.update(
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
     MAIL_USERNAME='mazinkayser12@gmail.com', 
-    MAIL_PASSWORD='bljslhjuvpwzxbzd', 
+    MAIL_PASSWORD='', 
     MAIL_DEFAULT_SENDER='mazinkayser12@gmail.com'
 )
 mail = Mail(app)
@@ -79,13 +79,39 @@ class UsuarioModel(db.Model):
     correo = db.Column(db.String(120), unique=True, nullable=False)
     id_usuario = db.Column(db.String(50), unique=True, nullable=False)
     contrasena = db.Column(db.String(100), nullable=False)
+    descripcion = db.Column(db.Text, default="")
+    ciudad = db.Column(db.String(100), default="")
+    pais = db.Column(db.String(100), default="")
+    carrera = db.Column(db.String(100), default="")
     rol = db.Column(db.String(20), default='usuario') # admin, docente, usuario
     foto = db.Column(db.String(255), default=None)
+    activo = db.Column(db.Boolean, default=True)
 
 class FavoritoModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario_model.id'), nullable=False)
     libro_id = db.Column(db.Integer, db.ForeignKey('libro_model.id'), nullable=False)
+
+class MensajeModel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    emisor_id = db.Column(db.Integer, nullable=False)
+    receptor_id = db.Column(db.Integer, nullable=False)
+    contenido = db.Column(db.Text, nullable=False)
+    fecha = db.Column(db.DateTime, default=db.func.current_timestamp())
+    leido = db.Column(db.Boolean, default=False)
+
+    def json(self):
+        return {
+            'id': self.id, 'emisor_id': self.emisor_id, 
+            'receptor_id': self.receptor_id, 'contenido': self.contenido,
+            'fecha': self.fecha.strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+class AmistadModel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario_model.id'), nullable=False)
+    amigo_id = db.Column(db.Integer, db.ForeignKey('usuario_model.id'), nullable=False)
+    estado = db.Column(db.String(20), default='pendiente') # pendiente, aceptada
 
 # ==========================================================
 # 3. RECURSOS API (Flask-Restful)
@@ -100,7 +126,7 @@ class UsuariosListResource(Resource):
         usuarios = UsuarioModel.query.all()
         return [{
             'id': u.id, 'nombres': u.nombres, 'apellidos': u.apellidos,
-            'cedula': u.cedula, 'rol': u.rol, 'id_usuario': u.id_usuario, 'correo': u.correo
+            'cedula': u.cedula, 'rol': u.rol, 'id_usuario': u.id_usuario, 'correo': u.correo, 'activo': bool(u.activo),
         } for u in usuarios]
 
 class UsuarioResource(Resource):
@@ -128,6 +154,8 @@ def login():
         
         user = UsuarioModel.query.filter_by(id_usuario=u, contrasena=c).first()
         if user:
+            if not user.activo:
+                return render_template('login.html', error="Tu cuenta ha sido inhabilitada. Contacta al administrador.")
             session.update({'usuario_id': user.id, 'nombre': f"{user.nombres} {user.apellidos}", 'rol': user.rol})
             return redirect(url_for('dashboard_vista'))
         return render_template('login.html', error="Credenciales incorrectas")
@@ -211,13 +239,22 @@ def actualizar_perfil(id):
         # Actualización de datos personales (ID_Usuario no se edita)
         usuario.nombres = request.form.get('nombres')
         usuario.apellidos = request.form.get('apellidos')
-        usuario.correo = request.form.get('correo')
         usuario.edad = request.form.get('edad')
+        usuario.descripcion = request.form.get('descripcion')
+        usuario.ciudad = request.form.get('ciudad')
+        usuario.pais = request.form.get('pais')
+        usuario.carrera = request.form.get('carrera')
         
         # Procesamiento de foto de perfil
         if 'foto' in request.files:
             file = request.files['foto']
             if file and allowed_file(file.filename):
+                # Borrar foto anterior si existe y no es la de por defecto
+                if usuario.foto:
+                    old_path = os.path.join(app.config['PROFILE_PICS_FOLDER'], usuario.foto)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+
                 filename = secure_filename(f"avatar_{id}_{file.filename}")
                 file.save(os.path.join(app.config['PROFILE_PICS_FOLDER'], filename))
                 usuario.foto = filename
@@ -226,6 +263,7 @@ def actualizar_perfil(id):
         session['nombre'] = f"{usuario.nombres} {usuario.apellidos}"
         return redirect(url_for('ver_perfil', id=id))
     return "Error", 404
+    
 
 @app.route('/api/subir_libro', methods=['POST'])
 def subir_libro():
@@ -264,6 +302,83 @@ def ver_libro_api(id):
             as_attachment=False 
         )
     return "Archivo no encontrado", 404
+
+@app.route('/api/usuarios/buscar')
+def buscar_usuarios_chat():
+    q = request.args.get('q', '')
+    # Buscamos usuarios que coincidan con el nombre, excluyendo al actual
+    usuarios = UsuarioModel.query.filter(
+        UsuarioModel.nombres.ilike(f"%{q}%"), 
+        UsuarioModel.id != session.get('usuario_id')
+    ).all()
+    return jsonify([{'id': u.id, 'nombres': u.nombres} for u in usuarios])
+
+@app.route('/mensajeria')
+def vista_mensajeria():
+    if 'usuario_id' not in session: return redirect(url_for('login'))
+    return render_template('mensajeria.html', 
+                           usuario_id=session['usuario_id'], 
+                           nombre=session['nombre'])
+
+@app.route('/api/mensajes/enviar', methods=['POST'])
+def enviar_mensaje():
+    datos = request.get_json()
+    nuevo_msj = MensajeModel(
+        emisor_id=session.get('usuario_id'),
+        receptor_id=datos.get('receptor_id'),
+        contenido=datos.get('contenido')
+    )
+    db.session.add(nuevo_msj)
+    db.session.commit()
+    return jsonify({'mensaje': 'Enviado'})
+
+@app.route('/api/mensajes/<int:contacto_id>')
+def obtener_mensajes(contacto_id):
+    mi_id = session.get('usuario_id')
+    # Traemos mensajes donde yo soy emisor y el otro receptor, O viceversa
+    mensajes = MensajeModel.query.filter(
+        ((MensajeModel.emisor_id == mi_id) & (MensajeModel.receptor_id == contacto_id)) |
+        ((MensajeModel.emisor_id == contacto_id) & (MensajeModel.receptor_id == mi_id))
+    ).order_by(MensajeModel.fecha.asc()).all()
+    return jsonify([m.json() for m in mensajes])
+
+@app.route('/api/amistad/enviar', methods=['POST'])
+def enviar_solicitud():
+    datos = request.get_json()
+    nueva = AmistadModel(
+        usuario_id=session.get('usuario_id'),
+        amigo_id=datos.get('amigo_id'),
+        estado='aceptada' # Para simplificar, la pondremos aceptada de una vez
+    )
+    db.session.add(nueva)
+    db.session.commit()
+    return jsonify({'mensaje': 'Solicitud enviada'})
+
+@app.route('/api/amistad/mis-contactos')
+def obtener_contactos():
+    mi_id = session.get('usuario_id')
+    # Buscamos en la tabla de amistades todos mis amigos
+    contactos = AmistadModel.query.filter_by(usuario_id=mi_id).all()
+    lista = []
+    for c in contactos:
+        u = UsuarioModel.query.get(c.amigo_id)
+        if u:
+            lista.append({'id': u.id, 'nombres': u.nombres})
+    return jsonify(lista)
+
+@app.route('/api/notificaciones/conteo')
+def conteo_notificaciones():
+    mi_id = session.get('usuario_id')
+    if not mi_id: 
+        return jsonify({'total': 0})
+    mensajes_nuevos = MensajeModel.query.filter_by(receptor_id=mi_id, leido=False).count()
+    
+    solicitudes_nuevas = AmistadModel.query.filter_by(amigo_id=mi_id, estado='pendiente').count()
+    return jsonify({
+        'mensajes': mensajes_nuevos,
+        'solicitudes': solicitudes_nuevas,
+        'total': mensajes_nuevos + solicitudes_nuevas
+    })
 
 @app.route('/api/publicar/<int:id>', methods=['PUT'])
 def publicar_libro(id):
@@ -329,7 +444,89 @@ def eliminar_favorito():
         db.session.commit()
         return jsonify({'mensaje': 'Eliminado de favoritos'})
     return jsonify({'mensaje': 'No encontrado'}), 404
+    
+@app.route('/api/usuarios', methods=['POST'])
+def registrar_usuario():
+    try:
+        datos = request.get_json()
+        existe_user = UsuarioModel.query.filter_by(id_usuario=datos.get('id_usuario')).first()
+        existe_correo = UsuarioModel.query.filter_by(correo=datos.get('correo')).first()
+        
+        if existe_user or existe_correo:
+            return jsonify({'error': 'El ID de usuario o el correo ya están registrados.'}), 400
 
+        nuevo_usuario = UsuarioModel(
+            nombres=datos.get('nombres'),
+            apellidos=datos.get('apellidos'),
+            edad=datos.get('edad'),
+            cedula=datos.get('cedula'),
+            correo=datos.get('correo'),
+            id_usuario=datos.get('id_usuario'),
+            contrasena=datos.get('contrasena'),
+            rol='usuario'  # Por defecto se registran como usuarios normales
+        )
+
+        db.session.add(nuevo_usuario)
+        db.session.commit()
+
+        return jsonify({'mensaje': 'Registro completado exitosamente'}), 201
+    except Exception as e:
+        print(f"Error en registro: {e}")
+    return jsonify({'error': 'No se pudo completar el registro en la base de datos.'}), 500
+
+    
+@app.route('/api/admin/usuarios/estado/<int:id>', methods=['PUT'])
+def cambiar_estado_usuario(id):
+    try:
+        usuario = UsuarioModel.query.get(id)
+        if not usuario or id == 0:
+            return jsonify({'error': 'No permitido o usuario no encontrado'}), 403
+
+        usuario.activo = not usuario.activo
+        db.session.commit()
+        
+        return jsonify({
+            'mensaje': 'Estado actualizado', 
+            'nuevo_estado': bool(usuario.activo)
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/usuarios/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+def gestionar_usuario_especifico(id):
+    usuario = UsuarioModel.query.get(id)
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+    if request.method == 'GET':
+        return jsonify({
+            'id': usuario.id, 'nombres': usuario.nombres, 'apellidos': usuario.apellidos,
+            'cedula': usuario.cedula, 'correo': usuario.correo, 'rol': usuario.rol,
+            'id_usuario': usuario.id_usuario, 'edad': usuario.edad
+        })
+
+    if request.method == 'PUT':
+        datos = request.get_json()
+        usuario.nombres = datos.get('nombres')
+        usuario.apellidos = datos.get('apellidos')
+        usuario.cedula = datos.get('cedula')
+        usuario.correo = datos.get('correo')
+        usuario.rol = datos.get('rol')
+        
+        # Si se envió una contraseña nueva, se actualiza
+        if datos.get('contrasena'):
+            usuario.contrasena = datos.get('contrasena')
+            
+        db.session.commit()
+        return jsonify({'mensaje': 'Usuario actualizado correctamente'})
+
+    if request.method == 'DELETE':
+        if id == 0:
+            return jsonify({'error': 'No se puede eliminar al admin maestro'}), 403
+        db.session.delete(usuario)
+        db.session.commit()
+        return jsonify({'mensaje': 'Eliminado'})
 # ==========================================================
 # 6. INICIO DE APLICACIÓN
 # ==========================================================

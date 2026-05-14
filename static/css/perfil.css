@@ -1,0 +1,7 @@
+:root { --primary-dark: #2c3e50; }
+body { background-color: #f0f2f5; }
+.profile-card { border-radius: 15px; overflow: hidden; border: none; }
+.avatar-container { position: relative; width: 120px; height: 120px; margin: 0 auto; }
+.btn-edit-photo { position: absolute; bottom: 0; right: 0; background: var(--primary-dark); color: white; border-radius: 50%; padding: 5px; cursor: pointer; }
+.avatar-img { width: 130px; height: 130px; object-fit: cover; border-radius: 50%; border: 4px solid white; }
+.readonly-field { background-color: #f8f9fa !important; cursor: not-allowed; }
