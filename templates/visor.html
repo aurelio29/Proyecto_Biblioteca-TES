@@ -16,7 +16,6 @@
     </nav>
 
     <div class="visor-container">
-        <!-- El parámetro #toolbar=0 oculta la barra de herramientas en la mayoría de navegadores -->
         <iframe 
             src="{{ url_for('ver_libro_api', id=id_libro) }}#toolbar=0&navpanes=0&scrollbar=0" 
             id="visor-pdf">
@@ -24,7 +23,6 @@
     </div>
 
     <script>
-        // Evitar combinaciones de teclas como Ctrl+S o Ctrl+P
         document.addEventListener('keydown', function(e) {
             if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'p' || e.key === 'u')) {
                 e.preventDefault();

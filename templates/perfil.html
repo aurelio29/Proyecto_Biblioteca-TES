@@ -10,7 +10,6 @@
 </head>
 <body class="bg-light">
 
-    <!-- Navbar Superior -->
     <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--primary-dark); padding: 0.8rem 2rem;">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center gap-2" href="/dashboard">
@@ -33,7 +32,6 @@
         <div class="row justify-content-center">
             <div class="col-md-9 col-lg-8">
                 
-                <!-- Mensajes Flash para Notificaciones -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                   {% if messages %}
                     {% for category, message in messages %}
@@ -48,7 +46,6 @@
                 <form action="/api/perfil/actualizar/{{ user.id }}" method="POST" enctype="multipart/form-data" id="formPerfil">
                     <div class="card shadow-sm border-0" style="border-radius: 15px; overflow: hidden;">
                         
-                        <!-- Header del Perfil -->
                         <div class="card-header text-white text-center py-5" style="background: var(--primary-dark);">
                             <div class="position-relative d-inline-block mb-3">
                                 {% if user.foto %}
@@ -72,7 +69,6 @@
                             </h5>
                             
                             <div class="row g-4">
-                                <!-- Campos Bloqueados -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold text-muted small text-uppercase">Correo Electrónico</label>
                                     <input type="email" class="form-control readonly-field" value="{{ user.correo }}" readonly>
@@ -88,7 +84,6 @@
                                     <input type="text" class="form-control readonly-field" value="{{ user.cedula }}" readonly>
                                 </div>
 
-                                <!-- Campos Editables -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold small text-uppercase">Nombres</label>
                                     <input type="text" name="nombres" class="form-control" value="{{ user.nombres }}" required>
@@ -142,18 +137,15 @@
         function confirmarCambioFoto(event) {
             const input = event.target;
             if (input.files && input.files[0]) {
-                // Mensaje de confirmación antes de procesar el cambio
                 const confirmacion = confirm("¿Estás seguro de que deseas cambiar tu foto de perfil? Al guardar los cambios, la foto anterior se borrará permanentemente.");
                 
                 if (confirmacion) {
                     const reader = new FileReader();
                     reader.onload = function(e) {
-                        // Actualizar la previsualización de la imagen
                         document.getElementById('preview').src = e.target.result;
                     }
                     reader.readAsDataURL(input.files[0]);
                 } else {
-                    // Si el usuario cancela, se limpia el input file para no enviar nada
                     input.value = "";
                 }
             }

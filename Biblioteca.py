@@ -15,7 +15,6 @@ CORS(app)
 api = Api(app)
 
 # --- Carpetas de Almacenamiento ---
-# Se crean las carpetas para libros y fotos de perfil si no existen
 UPLOAD_FOLDER = 'static/uploads'
 PROFILE_PICS_FOLDER = 'static/profile_pics'
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg'}
@@ -83,7 +82,7 @@ class UsuarioModel(db.Model):
     ciudad = db.Column(db.String(100), default="")
     pais = db.Column(db.String(100), default="")
     carrera = db.Column(db.String(100), default="")
-    rol = db.Column(db.String(20), default='usuario') # admin, docente, usuario
+    rol = db.Column(db.String(20), default='estudiante')
     foto = db.Column(db.String(255), default=None)
     activo = db.Column(db.Boolean, default=True)
 
@@ -174,7 +173,6 @@ def recuperar_credenciales():
                           recipients=[correo])
             msg.body = f"Hola {user.nombres},\n\nTus credenciales son:\nUsuario: {user.id_usuario}\nClave: {user.contrasena}"
             
-            # El error 500 suele ocurrir aquí
             mail.send(msg) 
             
             return jsonify({'mensaje': 'Credenciales enviadas correctamente.'}), 200
@@ -182,7 +180,6 @@ def recuperar_credenciales():
         return jsonify({'mensaje': 'El correo no está registrado.'}), 404
 
     except Exception as e:
-        # Esto imprimirá el error real en tu terminal para que sepas qué falla
         print(f"Error detectado: {e}") 
         return jsonify({'mensaje': f'Error interno en el servidor de correo: {str(e)}'}), 500
     
@@ -191,7 +188,6 @@ def dashboard_vista():
     if 'usuario_id' not in session: return redirect(url_for('login'))
     rol = session.get('rol')
     datos = {'usuario_id': session['usuario_id'], 'nombre': session['nombre']}
-    # Redirección según el rol del usuario
     if rol == 'admin': return render_template('index_admin.html', **datos)
     if rol == 'docente': return render_template('index_docente.html', **datos)
     return render_template('index_estudiante.html', **datos)
@@ -224,7 +220,6 @@ def vista_visor(id):
     
     libro = LibroModel.query.get(id)
     if libro:
-        # Renderizamos el visor y le pasamos los datos del libro
         return render_template('visor.html', id_libro=id, titulo=libro.titulo)
     return "Libro no encontrado", 404
 
@@ -236,7 +231,6 @@ def actualizar_perfil(id):
     if session.get('usuario_id') != id: return jsonify({'error': 'No autorizado'}), 403
     usuario = UsuarioModel.query.get(id)
     if usuario:
-        # Actualización de datos personales (ID_Usuario no se edita)
         usuario.nombres = request.form.get('nombres')
         usuario.apellidos = request.form.get('apellidos')
         usuario.edad = request.form.get('edad')
@@ -245,11 +239,9 @@ def actualizar_perfil(id):
         usuario.pais = request.form.get('pais')
         usuario.carrera = request.form.get('carrera')
         
-        # Procesamiento de foto de perfil
         if 'foto' in request.files:
             file = request.files['foto']
             if file and allowed_file(file.filename):
-                # Borrar foto anterior si existe y no es la de por defecto
                 if usuario.foto:
                     old_path = os.path.join(app.config['PROFILE_PICS_FOLDER'], usuario.foto)
                     if os.path.exists(old_path):
@@ -295,7 +287,6 @@ def api_get_mis_libros(user_id):
 def ver_libro_api(id):
     libro = LibroModel.query.get(id)
     if libro:
-        # as_attachment=False es la clave para que se abra en el navegador
         return send_from_directory(
             app.config['UPLOAD_FOLDER'], 
             libro.ruta_archivo, 
@@ -306,7 +297,6 @@ def ver_libro_api(id):
 @app.route('/api/usuarios/buscar')
 def buscar_usuarios_chat():
     q = request.args.get('q', '')
-    # Buscamos usuarios que coincidan con el nombre, excluyendo al actual
     usuarios = UsuarioModel.query.filter(
         UsuarioModel.nombres.ilike(f"%{q}%"), 
         UsuarioModel.id != session.get('usuario_id')
@@ -335,7 +325,6 @@ def enviar_mensaje():
 @app.route('/api/mensajes/<int:contacto_id>')
 def obtener_mensajes(contacto_id):
     mi_id = session.get('usuario_id')
-    # Traemos mensajes donde yo soy emisor y el otro receptor, O viceversa
     mensajes = MensajeModel.query.filter(
         ((MensajeModel.emisor_id == mi_id) & (MensajeModel.receptor_id == contacto_id)) |
         ((MensajeModel.emisor_id == contacto_id) & (MensajeModel.receptor_id == mi_id))
@@ -348,7 +337,7 @@ def enviar_solicitud():
     nueva = AmistadModel(
         usuario_id=session.get('usuario_id'),
         amigo_id=datos.get('amigo_id'),
-        estado='aceptada' # Para simplificar, la pondremos aceptada de una vez
+        estado='aceptada'
     )
     db.session.add(nueva)
     db.session.commit()
@@ -357,7 +346,6 @@ def enviar_solicitud():
 @app.route('/api/amistad/mis-contactos')
 def obtener_contactos():
     mi_id = session.get('usuario_id')
-    # Buscamos en la tabla de amistades todos mis amigos
     contactos = AmistadModel.query.filter_by(usuario_id=mi_id).all()
     lista = []
     for c in contactos:
@@ -413,7 +401,6 @@ def vista_favoritos():
 
 @app.route('/api/favoritos/<int:user_id>', methods=['GET'])
 def obtener_favoritos(user_id):
-    # Consulta que une Favoritos con Libros para traer la información completa
     favs = db.session.query(LibroModel).join(FavoritoModel).filter(FavoritoModel.usuario_id == user_id).all()
     return jsonify([l.json() for l in favs])
 
@@ -422,8 +409,7 @@ def agregar_favorito():
     datos = request.get_json()
     uid = datos.get('usuario_id')
     lid = datos.get('libro_id')
-    
-    # Verificar si ya es favorito para no duplicar
+
     existe = FavoritoModel.query.filter_by(usuario_id=uid, libro_id=lid).first()
     if not existe:
         nuevo_fav = FavoritoModel(usuario_id=uid, libro_id=lid)
@@ -463,7 +449,7 @@ def registrar_usuario():
             correo=datos.get('correo'),
             id_usuario=datos.get('id_usuario'),
             contrasena=datos.get('contrasena'),
-            rol='usuario'  # Por defecto se registran como usuarios normales
+            rol='usuario'
         )
 
         db.session.add(nuevo_usuario)
@@ -514,7 +500,6 @@ def gestionar_usuario_especifico(id):
         usuario.correo = datos.get('correo')
         usuario.rol = datos.get('rol')
         
-        # Si se envió una contraseña nueva, se actualiza
         if datos.get('contrasena'):
             usuario.contrasena = datos.get('contrasena')
             
@@ -533,7 +518,6 @@ def gestionar_usuario_especifico(id):
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-        # Creación automática del administrador maestro si no existe
         if not UsuarioModel.query.get(0):
             admin = UsuarioModel(id=0, nombres='Administrador', apellidos='Sistema', cedula='0000000000', 
                                  correo='admin@biblioteca.tes', id_usuario='admin', contrasena='1234', rol='admin', edad=30)

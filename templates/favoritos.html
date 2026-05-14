@@ -29,11 +29,10 @@
 
 <div class="container mt-5">
     <div id="listaFavoritos" class="row row-cols-1 row-cols-md-3 g-4">
-        <!-- Los libros se cargarán aquí -->
     </div>
 </div>
 
-<!-- MODAL VISOR DE LIBROS (PANTALLA COMPLETA) -->
+<!-- VISOR DE LIBROS (PANTALLA COMPLETA) -->
 <div class="modal fade" id="modalVisor" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen">
         <div class="modal-content">
@@ -41,7 +40,6 @@
                 <h5 class="modal-title" id="tituloLibroVisor">Visualizando Libro</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" onclick="detenerVisor()"></button>
             </div>
-            <!-- Cuerpo del modal donde se carga el Iframe -->
             <div class="modal-body p-0 bg-dark">
                 <iframe id="visorIframe" src=""></iframe>
             </div>
@@ -64,7 +62,6 @@
             return;
         }
 
-        // CAMBIO PRINCIPAL: El botón 'Leer ahora' ya no usa href=, sino onclick=abrirDocumento()
         contenedor.innerHTML = libros.map(l => `
             <div class="col">
                 <div class="card h-100 card-libro shadow-sm border-0" style="border-radius: 15px;">
@@ -86,20 +83,17 @@
         `).join('');
     }
 
-    // FUNCIÓN PARA ABRIR EL VISOR SEGURO
     function abrirDocumento(idLibro, titulo) {
         const iframe = document.getElementById('visorIframe');
         const tituloVisor = document.getElementById('tituloLibroVisor');
         
         tituloVisor.innerText = `Leyendo: ${titulo}`;
         
-        // El parámetro #toolbar=0&navpanes=0&scrollbar=0 oculta las opciones de descarga del navegador
         iframe.src = `/api/ver_libro/${idLibro}#toolbar=0&navpanes=0&scrollbar=0`;
         
         modalVisor.show();
     }
 
-    // FUNCIÓN PARA LIMPIAR EL IFRAME AL CERRAR
     function detenerVisor() {
         document.getElementById('visorIframe').src = "";
     }
